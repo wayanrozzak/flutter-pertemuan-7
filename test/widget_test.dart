@@ -2,10 +2,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
-import 'package:flutter_pertemuan_6/providers/course_provider.dart';
-import 'package:flutter_pertemuan_6/repositories/course_repository.dart';
-import 'package:flutter_pertemuan_6/services/course_service.dart';
-import 'package:flutter_pertemuan_6/main.dart';
+import 'package:flutter_pertemuan_7/providers/course_provider.dart';
+import 'package:flutter_pertemuan_7/repositories/course_repository.dart';
+import 'package:flutter_pertemuan_7/services/course_service.dart';
+import 'package:flutter_pertemuan_7/main.dart';
 
 void main() {
   testWidgets('Aplikasi Course Explorer berhasil dibuat', (

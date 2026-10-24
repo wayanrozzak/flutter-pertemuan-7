@@ -1,5 +1,5 @@
 
-name: flutter_pertemuan_6
+name: flutter_pertemuan_7
 description: "Flutter Course Explorer project"
 publish_to: 'none'
 
@@ -13,6 +13,7 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.8
   provider: ^6.1.5+1
+  http: ^1.6.0
 
 dev_dependencies:
   flutter_test:
