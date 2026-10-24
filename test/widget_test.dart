@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 
 import 'package:flutter_pertemuan_7/providers/course_provider.dart';
 import 'package:flutter_pertemuan_7/repositories/course_repository.dart';
-import 'package:flutter_pertemuan_7/services/course_service.dart';
+import 'package:flutter_pertemuan_7/services/course_api_service.dart';
 import 'package:flutter_pertemuan_7/main.dart';
 
 void main() {
@@ -14,14 +14,16 @@ void main() {
     await tester.pumpWidget(
       ChangeNotifierProvider<CourseProvider>(
         create: (_) => CourseProvider(
-          CourseRepository(CourseService()),
+          CourseRepository(
+            CourseApiService(
+              'https://course-api-pearl.vercel.app',
+            ),
+          ),
         ),
         child: const CourseExplorerApp(),
       ),
     );
 
-    expect(find.text('Flutter UI Fundamentals'), findsOneWidget);
-    expect(find.text('Wayan Muizul Rozzak'), findsOneWidget);
-    expect(find.text('NIM: 2415051111'), findsOneWidget);
+    expect(find.text('Course Explorer'), findsOneWidget);
   });
 }

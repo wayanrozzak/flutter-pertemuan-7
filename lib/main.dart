@@ -2,45 +2,21 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'models/course.dart';
 import 'providers/course_provider.dart';
 import 'repositories/course_repository.dart';
 import 'screens/course_detail_page.dart';
 import 'screens/favorites_page.dart';
-import 'services/course_service.dart';
-
-const String studentName = 'Wayan Muizul Rozzak';
-const String studentId = '2415051111';
-
-// Menguji pemetaan respons REST API menjadi List<Course>.
-Future<void> testFetchCourses() async {
-  try {
-    final List<Course> courses =
-        await CourseService().loadCourses();
-
-    debugPrint(
-      'REST API berhasil: ${courses.length} course ditemukan.',
-    );
-
-    for (final course in courses.take(3)) {
-      debugPrint(
-        'Kode: ${course.code} | '
-        'Judul: ${course.title} | '
-        'Status: ${course.status}',
-      );
-    }
-  } catch (error) {
-    debugPrint('Pengujian REST API gagal: $error');
-  }
-}
+import 'services/course_api_service.dart';
 
 void main() {
-  testFetchCourses();
-
   runApp(
     ChangeNotifierProvider(
       create: (_) => CourseProvider(
-        CourseRepository(CourseService()),
+        CourseRepository(
+          CourseApiService(
+            'https://course-api-pearl.vercel.app',
+          ),
+        ),
       )..loadCourses(),
       child: const CourseExplorerApp(),
     ),
@@ -53,7 +29,7 @@ class CourseExplorerApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter UI Fundamentals',
+      title: 'Course Explorer',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
@@ -71,12 +47,11 @@ class CourseHomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final state = context.watch<CourseProvider>();
+    final provider = context.watch<CourseProvider>();
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Flutter UI Fundamentals'),
-        centerTitle: true,
+        title: const Text('Course Explorer'),
         actions: [
           IconButton(
             tooltip: 'Mata Kuliah Favorit',
@@ -90,116 +65,42 @@ class CourseHomePage extends StatelessWidget {
               );
             },
           ),
-          IconButton(
-            tooltip: 'Muat Ulang Data',
-            icon: const Icon(Icons.refresh),
-            onPressed: () {
-              context.read<CourseProvider>().loadCourses();
-            },
-          ),
         ],
       ),
-      body: Column(
-        children: [
-          Card(
-            margin: const EdgeInsets.all(16),
-            color: Theme.of(context)
-                .colorScheme
-                .primaryContainer,
-            child: SizedBox(
-              width: double.infinity,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      studentName,
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleMedium
-                          ?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 4),
-                    Text('NIM: $studentId'),
-                    const SizedBox(height: 12),
-                    const Text('Tahap 3: Model dan JSON Mapping'),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _SummaryCard(
-                    icon: Icons.menu_book,
-                    title: 'Mata Kuliah',
-                    value: state.courses.length.toString(),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _SummaryCard(
-                    icon: Icons.favorite,
-                    title: 'Favorit',
-                    value: state.favorites.length.toString(),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Daftar Mata Kuliah',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            child: _buildCourseList(context, state),
-          ),
-        ],
-      ),
+      body: _buildBody(context, provider),
     );
   }
 
-  Widget _buildCourseList(
+  Widget _buildBody(
     BuildContext context,
-    CourseProvider state,
+    CourseProvider provider,
   ) {
-    if (state.isLoading && state.courses.isEmpty) {
+    if (provider.isLoading) {
       return const Center(
         child: CircularProgressIndicator(),
       );
     }
 
-    if (state.error != null && state.courses.isEmpty) {
+    if (provider.error != null) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.error_outline, size: 40),
-              const SizedBox(height: 12),
-              Text(
-                'Gagal memuat mata kuliah:\n${state.error}',
-                textAlign: TextAlign.center,
+              const Icon(
+                Icons.error_outline,
+                size: 48,
+                color: Colors.red,
               ),
               const SizedBox(height: 12),
-              FilledButton.icon(
-                onPressed: () {
-                  context.read<CourseProvider>().loadCourses();
-                },
+              Text(
+                'Gagal memuat mata kuliah:\n${provider.error}',
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: provider.loadCourses,
                 icon: const Icon(Icons.refresh),
                 label: const Text('Coba Lagi'),
               ),
@@ -209,102 +110,91 @@ class CourseHomePage extends StatelessWidget {
       );
     }
 
-    if (state.courses.isEmpty) {
+    if (provider.courses.isEmpty) {
       return const Center(
-        child: Text('Belum ada mata kuliah.'),
+        child: Text('Belum ada data mata kuliah.'),
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
-      itemCount: state.courses.length,
-      itemBuilder: (context, index) {
-        final course = state.courses[index];
-        final isFavorite = state.isFavorite(course.code);
-
-        return Card(
-          margin: const EdgeInsets.only(bottom: 8),
-          child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor:
-                  Theme.of(context).colorScheme.primaryContainer,
-              child: const Icon(Icons.school),
-            ),
-            title: Text(
-              course.title,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-            subtitle: Text(
-              '${course.code} • ${course.credits} SKS\n'
-              'Status: ${course.status}',
-            ),
-            isThreeLine: true,
-            trailing: IconButton(
-              tooltip: isFavorite
-                  ? 'Hapus dari Favorit'
-                  : 'Tambahkan ke Favorit',
-              icon: Icon(
-                isFavorite ? Icons.favorite : Icons.favorite_border,
-              ),
-              onPressed: () {
-                context
-                    .read<CourseProvider>()
-                    .toggleFavorite(course.code);
-              },
-            ),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => CourseDetailPage(course: course),
-                ),
-              );
-            },
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _SummaryCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String value;
-
-  const _SummaryCard({
-    required this.icon,
-    required this.title,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
+    return RefreshIndicator(
+      onRefresh: provider.loadCourses,
+      child: ListView(
         padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              color: Theme.of(context).colorScheme.primary,
-              size: 28,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title),
-                  Text(
-                    value,
-                    style: Theme.of(context).textTheme.titleLarge,
+        children: [
+          Text(
+            'Daftar Mata Kuliah',
+            style: Theme.of(context)
+                .textTheme
+                .headlineSmall
+                ?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '${provider.courses.length} mata kuliah tersedia',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 16),
+          ...provider.courses.map((course) {
+            final isFavorite =
+                provider.isFavorite(course.code);
+
+            return Card(
+              margin: const EdgeInsets.only(bottom: 12),
+              child: ListTile(
+                contentPadding: const EdgeInsets.all(12),
+                leading: CircleAvatar(
+                  backgroundColor:
+                      Theme.of(context).colorScheme.primaryContainer,
+                  child: const Icon(Icons.menu_book),
+                ),
+                title: Text(
+                  course.title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
                   ),
-                ],
+                ),
+                subtitle: Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Column(
+                    crossAxisAlignment:
+                        CrossAxisAlignment.start,
+                    children: [
+                      Text('Kode: ${course.code}'),
+                      Text('SKS: ${course.credits}'),
+                      Text('Status: ${course.status}'),
+                    ],
+                  ),
+                ),
+                trailing: IconButton(
+                  tooltip: isFavorite
+                      ? 'Hapus dari favorit'
+                      : 'Tambah ke favorit',
+                  icon: Icon(
+                    isFavorite
+                        ? Icons.favorite
+                        : Icons.favorite_border,
+                    color: isFavorite ? Colors.red : null,
+                  ),
+                  onPressed: () {
+                    provider.toggleFavorite(course.code);
+                  },
+                ),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => CourseDetailPage(
+                        course: course,
+                      ),
+                    ),
+                  );
+                },
               ),
-            ),
-          ],
-        ),
+            );
+          }),
+        ],
       ),
     );
   }
