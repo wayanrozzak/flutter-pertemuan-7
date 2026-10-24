@@ -1,23 +1,34 @@
-## Tahap 16: Audit Architecture dan Dependency Direction
+## Tahap 1 — Membaca REST Endpoint dan JSON
 
-### Tanggung Jawab Setiap Folder
+### Informasi Endpoint
+- **Base URL:** https://course-api-pearl.vercel.app
+- **Endpoint:** https://course-api-pearl.vercel.app/courses
+- **HTTP Method:** GET
+- **Status Code:** 200 OK
+- **Resource:** courses
 
-- **models/**: Mendefinisikan struktur data mata kuliah melalui class `Course`.
-- **services/**: Membaca file JSON menggunakan `rootBundle`, memproses JSON dengan `jsonDecode`, dan mengubah data menjadi objek `Course`.
-- **repositories/**: Menjadi perantara antara Provider dan Service dalam pengambilan data.
-- **providers/**: Mengelola state aplikasi, termasuk daftar mata kuliah, loading, error, dan favorit menggunakan `ChangeNotifier`.
-- **screens/**: Menyediakan halaman utama, detail mata kuliah, dan daftar favorit.
-- **widgets/**: Menyimpan komponen UI yang dapat digunakan kembali.
-- **assets/data/**: Menyimpan file JSON sebagai sumber data mata kuliah.
+### Hasil Pengujian
+Pengujian endpoint dilakukan menggunakan PowerShell dengan perintah `Invoke-WebRequest`. Request GET berhasil dan mengembalikan status code 200 OK.
 
-### Arah Dependency
+Response body berupa array JSON yang berisi 5 data course. Field yang ditemukan meliputi:
+- `id`: identitas course.
+- `code`: kode course.
+- `title`: judul course.
+- `credits`: jumlah kredit.
+- `status`: status course.
+- `created_at`: waktu pembuatan data.
 
-Arah dependency aplikasi adalah:
+### Contoh Data JSON
+```json
+{
+  "id": 2,
+  "code": "MOB02",
+  "title": "Dart Fundamentals",
+  "credits": 3,
+  "status": "active",
+  "created_at": "2026-10-21T03:28:09.128977Z"
+}
+```
 
-`Screens/Widgets → Provider → Repository → Service/Data Source`
-
-Pemisahan ini membuat setiap layer memiliki tanggung jawab yang jelas. Screen tidak membaca JSON secara langsung, Service tidak menangani UI, dan Provider tidak menyimpan `BuildContext` sebagai state.
-
-### Hasil Audit
-
-Pemeriksaan kode menunjukkan bahwa penggunaan `rootBundle` dan `jsonDecode` ditemukan pada `course_service.dart`, sedangkan pencarian `BuildContext` pada folder `providers` tidak menemukan hasil. Hal ini menunjukkan bahwa kedua bagian tersebut telah mengikuti prinsip pemisahan tanggung jawab yang diharapkan.
+### Catatan
+Endpoint berhasil diakses menggunakan metode GET. Data diterima dalam format JSON dan dapat digunakan sebagai sumber data untuk pengembangan aplikasi Course Data Manager.
