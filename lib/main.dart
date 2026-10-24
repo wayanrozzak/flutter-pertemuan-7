@@ -7,6 +7,7 @@ import 'repositories/course_repository.dart';
 import 'screens/course_detail_page.dart';
 import 'screens/favorites_page.dart';
 import 'services/course_api_service.dart';
+import 'widgets/error_view.dart';
 
 void main() {
   runApp(
@@ -75,34 +76,37 @@ class CourseHomePage extends StatelessWidget {
     BuildContext context,
     CourseProvider provider,
   ) {
+    // Loading state
     if (provider.isLoading) {
       return const Center(
         child: CircularProgressIndicator(),
       );
     }
 
+    // Error state
     if (provider.error != null) {
-      return Center(
+      return ErrorView(
+        message: provider.error!,
+        onRetry: provider.loadCourses,
+      );
+    }
+
+    // Empty state
+    if (provider.courses.isEmpty) {
+      return const Center(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
-                Icons.error_outline,
+              Icon(
+                Icons.inbox_outlined,
                 size: 48,
-                color: Colors.red,
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               Text(
-                'Gagal memuat mata kuliah:\n${provider.error}',
+                'Data course belum tersedia',
                 textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton.icon(
-                onPressed: provider.loadCourses,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Coba Lagi'),
               ),
             ],
           ),
@@ -110,12 +114,7 @@ class CourseHomePage extends StatelessWidget {
       );
     }
 
-    if (provider.courses.isEmpty) {
-      return const Center(
-        child: Text('Belum ada data mata kuliah.'),
-      );
-    }
-
+    // Success state
     return RefreshIndicator(
       onRefresh: provider.loadCourses,
       child: ListView(
@@ -145,8 +144,9 @@ class CourseHomePage extends StatelessWidget {
               child: ListTile(
                 contentPadding: const EdgeInsets.all(12),
                 leading: CircleAvatar(
-                  backgroundColor:
-                      Theme.of(context).colorScheme.primaryContainer,
+                  backgroundColor: Theme.of(context)
+                      .colorScheme
+                      .primaryContainer,
                   child: const Icon(Icons.menu_book),
                 ),
                 title: Text(

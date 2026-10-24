@@ -24,14 +24,14 @@ class CourseProvider extends ChangeNotifier {
 
   // Mengubah status favorit dan memberi tahu semua screen.
   void toggleFavorite(String code) {
-  if (_favorites.contains(code)) {
-    _favorites.remove(code);
-  } else {
-    _favorites.add(code);
-  }
+    if (_favorites.contains(code)) {
+      _favorites.remove(code);
+    } else {
+      _favorites.add(code);
+    }
 
-  notifyListeners();
-}
+    notifyListeners();
+  }
 
   // Mengambil daftar mata kuliah yang menjadi favorit.
   List<Course> get favoriteCourses {
@@ -40,6 +40,7 @@ class CourseProvider extends ChangeNotifier {
         .toList();
   }
 
+  // Memuat data serta menangani loading, success, dan error.
   Future<void> loadCourses() async {
     isLoading = true;
     error = null;
