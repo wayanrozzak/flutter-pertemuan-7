@@ -1,5 +1,8 @@
 
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 
 import 'providers/course_provider.dart';
@@ -11,7 +14,39 @@ import 'screens/favorites_page.dart';
 const String studentName = 'Wayan Muizul Rozzak';
 const String studentId = '2415051111';
 
+// Endpoint REST API untuk praktikum Tahap 2.
+const String apiUrl = 'https://course-api-pearl.vercel.app/courses';
+// Fungsi HTTP GET sementara untuk Tahap 2.
+// Pada Tahap 4, fungsi ini akan dipindahkan ke service.
+Future<List<dynamic>> fetchCourses() async {
+  final response = await http.get(Uri.parse(apiUrl));
+
+  debugPrint('HTTP GET URL: $apiUrl');
+  debugPrint('HTTP status code: ${response.statusCode}');
+
+  if (response.statusCode == 200) {
+    final courses = jsonDecode(response.body) as List<dynamic>;
+    debugPrint('Jumlah course dari HTTP GET: ${courses.length}');
+    return courses;
+  }
+
+  throw Exception('HTTP ${response.statusCode}');
+}
+
+// Menguji HTTP GET dan menampilkan hasilnya di Debug Console.
+Future<void> testFetchCourses() async {
+  try {
+    final courses = await fetchCourses();
+    debugPrint('HTTP GET berhasil: ${courses.length} course ditemukan.');
+  } catch (error) {
+    debugPrint('HTTP GET gagal: $error');
+  }
+}
+
 void main() {
+  // Pemanggilan sementara untuk bukti praktikum Tahap 2.
+  testFetchCourses();
+
   runApp(
     ChangeNotifierProvider(
       create: (_) => CourseProvider(
@@ -79,15 +114,13 @@ class CourseHomePage extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            // Identitas mahasiswa dan informasi tahap
+            // Identitas mahasiswa dan informasi tahap.
             Container(
               width: double.infinity,
               margin: const EdgeInsets.all(16),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Theme.of(context)
-                    .colorScheme
-                    .primaryContainer,
+                color: Theme.of(context).colorScheme.primaryContainer,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: const Column(
@@ -104,20 +137,16 @@ class CourseHomePage extends StatelessWidget {
                   Text('NIM: $studentId'),
                   SizedBox(height: 12),
                   Text(
-                    'Tahap 14: Mini Project Integrasi - Course Explorer v2',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                    ),
+                    'Tahap 2: HTTP GET dari Flutter',
+                    style: TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ],
               ),
             ),
 
-            // Ringkasan jumlah mata kuliah dan favorit
+            // Ringkasan jumlah mata kuliah dan favorit.
             Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 children: [
                   Expanded(
@@ -170,7 +199,7 @@ class CourseHomePage extends StatelessWidget {
     BuildContext context,
     CourseProvider state,
   ) {
-    // Kondisi loading
+    // Kondisi loading.
     if (state.isLoading) {
       return const Center(
         child: Column(
@@ -184,7 +213,7 @@ class CourseHomePage extends StatelessWidget {
       );
     }
 
-    // Kondisi error
+    // Kondisi error.
     if (state.error != null) {
       return Center(
         child: SingleChildScrollView(
@@ -224,14 +253,14 @@ class CourseHomePage extends StatelessWidget {
       );
     }
 
-    // Kondisi data kosong
+    // Kondisi data kosong.
     if (state.courses.isEmpty) {
       return const Center(
         child: Text('Belum ada data mata kuliah.'),
       );
     }
 
-    // Daftar mata kuliah
+    // Daftar mata kuliah.
     return RefreshIndicator(
       onRefresh: () {
         return context.read<CourseProvider>().loadCourses();
@@ -252,9 +281,8 @@ class CourseHomePage extends StatelessWidget {
                 vertical: 8,
               ),
               leading: CircleAvatar(
-                backgroundColor: Theme.of(context)
-                    .colorScheme
-                    .primaryContainer,
+                backgroundColor:
+                    Theme.of(context).colorScheme.primaryContainer,
                 child: const Icon(Icons.school),
               ),
               title: Text(
@@ -272,7 +300,7 @@ class CourseHomePage extends StatelessWidget {
               ),
               isThreeLine: true,
 
-              // Toggle favorit menggunakan course.code
+              // Toggle favorit menggunakan course.code.
               trailing: IconButton(
                 tooltip: isFavorite
                     ? 'Hapus dari favorit'
@@ -283,14 +311,12 @@ class CourseHomePage extends StatelessWidget {
                       .toggleFavorite(course.code);
                 },
                 icon: Icon(
-                  isFavorite
-                      ? Icons.favorite
-                      : Icons.favorite_border,
+                  isFavorite ? Icons.favorite : Icons.favorite_border,
                   color: isFavorite ? Colors.red : null,
                 ),
               ),
 
-              // Buka halaman detail
+              // Buka halaman detail.
               onTap: () {
                 Navigator.push(
                   context,
