@@ -4,13 +4,15 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../models/course.dart';
+import 'course_data_source.dart';
 
-class CourseApiService {
+class CourseApiService implements CourseDataSource {
   CourseApiService(this.baseUrl);
 
   final String baseUrl;
 
   // HTTP GET: Mengambil seluruh data course.
+  @override
   Future<List<Course>> getCourses() async {
     final response = await http.get(
       Uri.parse('$baseUrl/courses'),
@@ -35,6 +37,7 @@ class CourseApiService {
   }
 
   // HTTP POST: Membuat course baru.
+  @override
   Future<Course> createCourse(Course course) async {
     final response = await http.post(
       Uri.parse('$baseUrl/courses'),
@@ -57,6 +60,7 @@ class CourseApiService {
   }
 
   // HTTP PUT: Memperbarui course berdasarkan ID.
+  @override
   Future<void> updateCourse(
     int id,
     Course course,
@@ -78,6 +82,7 @@ class CourseApiService {
   }
 
   // HTTP DELETE: Menghapus course berdasarkan ID.
+  @override
   Future<void> deleteCourse(int id) async {
     final response = await http.delete(
       Uri.parse('$baseUrl/courses/$id'),

@@ -7,16 +7,16 @@ import 'repositories/course_repository.dart';
 import 'screens/course_home_page.dart';
 import 'services/course_api_service.dart';
 
+const String apiBaseUrl =
+    'https://course-api-pearl.vercel.app';
+
 void main() {
+  final dataSource = CourseApiService(apiBaseUrl);
+  final repository = CourseRepository(dataSource);
+
   runApp(
     ChangeNotifierProvider(
-      create: (_) => CourseProvider(
-        CourseRepository(
-          CourseApiService(
-            'https://course-api-pearl.vercel.app',
-          ),
-        ),
-      )..loadCourses(),
+      create: (_) => CourseProvider(repository)..loadCourses(),
       child: const CourseExplorerApp(),
     ),
   );
