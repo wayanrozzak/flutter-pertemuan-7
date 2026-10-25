@@ -1,6 +1,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'providers/course_provider.dart';
 import 'repositories/course_repository.dart';
@@ -10,7 +11,20 @@ import 'services/course_api_service.dart';
 const String apiBaseUrl =
     'https://course-api-pearl.vercel.app';
 
-void main() {
+const String supabaseUrl =
+    'https://ftbpxopkphlgbbtomxz.supabase.co';
+
+const String supabasePublishableKey =
+    'sb_publishable_jhq_TcHdcM7lgrXcqSxvTA_F9G-ZKxZ';
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Supabase.initialize(
+    url: supabaseUrl,
+    publishableKey: supabasePublishableKey,
+  );
+
   final dataSource = CourseApiService(apiBaseUrl);
   final repository = CourseRepository(dataSource);
 
