@@ -1,4 +1,5 @@
-﻿import 'package:supabase_flutter/supabase_flutter.dart';
+﻿
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/course.dart';
 import 'course_data_source.dart';
@@ -46,6 +47,10 @@ class CourseSupabaseService implements CourseDataSource {
   }
 
   @override
-  Future<void> deleteCourse(int id) =>
-      throw UnimplementedError();
+  Future<void> deleteCourse(int id) async {
+    await supabase
+        .from('courses')
+        .delete()
+        .eq('id', id);
+  }
 }

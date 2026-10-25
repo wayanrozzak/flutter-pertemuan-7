@@ -23,7 +23,7 @@ class CourseProvider extends ChangeNotifier {
     return _favorites.contains(code);
   }
 
-  // Mengubah status favorit dan memberi tahu semua screen.
+  // Mengubah status favorit.
   void toggleFavorite(String code) {
     if (_favorites.contains(code)) {
       _favorites.remove(code);
@@ -34,14 +34,14 @@ class CourseProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Mengambil daftar mata kuliah yang menjadi favorit.
+  // Mengambil daftar mata kuliah favorit.
   List<Course> get favoriteCourses {
     return courses
         .where((course) => _favorites.contains(course.code))
         .toList();
   }
 
-  // Memuat data serta menangani loading, success, dan error.
+  // Memuat daftar mata kuliah dari repository.
   Future<void> loadCourses() async {
     isLoading = true;
     error = null;
@@ -57,11 +57,11 @@ class CourseProvider extends ChangeNotifier {
     }
   }
 
-  // Membuat course baru dan memuat ulang daftar setelah berhasil.
+  // Menambahkan course dan memuat ulang daftar.
   Future<Course> createCourse(Course course) async {
     if (isSaving) {
       throw Exception(
-        'Penyimpanan course sedang berlangsung',
+        'Proses penyimpanan course sedang berlangsung.',
       );
     }
 
@@ -88,11 +88,11 @@ class CourseProvider extends ChangeNotifier {
     }
   }
 
-  // Memperbarui course dan memuat ulang daftar setelah berhasil.
+  // Memperbarui course dan memuat ulang daftar.
   Future<void> updateCourse(int id, Course course) async {
     if (isSaving) {
       throw Exception(
-        'Penyimpanan course sedang berlangsung',
+        'Proses penyimpanan course sedang berlangsung.',
       );
     }
 
@@ -116,11 +116,11 @@ class CourseProvider extends ChangeNotifier {
     }
   }
 
-  // Menghapus course melalui HTTP DELETE.
+  // Menghapus course berdasarkan ID dan memuat ulang daftar.
   Future<void> deleteCourse(int id, String code) async {
     if (isSaving) {
       throw Exception(
-        'Proses penyimpanan course sedang berlangsung',
+        'Proses penyimpanan course sedang berlangsung.',
       );
     }
 
@@ -128,19 +128,13 @@ class CourseProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Menghapus course dari server.
+      // Hapus data dari database melalui repository.
       await repository.deleteCourse(id);
 
-      // Membersihkan course dari daftar favorit.
+      // Hapus course dari daftar favorit.
       _favorites.remove(code);
 
-      // Menghapus course dari daftar lokal.
-      courses.removeWhere((course) => course.id == id);
-
-      error = null;
-      notifyListeners();
-
-      // Memuat ulang daftar dari server.
+      // Muat ulang daftar dari database.
       await loadCourses();
 
       if (error != null) {
