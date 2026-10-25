@@ -6,13 +6,14 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'providers/course_provider.dart';
 import 'repositories/course_repository.dart';
 import 'screens/course_home_page.dart';
-import 'services/course_api_service.dart';
+import 'services/course_supabase_service.dart';
 
 const String apiBaseUrl =
     'https://course-api-pearl.vercel.app';
 
+
 const String supabaseUrl =
-    'https://ftbpxopkphlgbbtomxz.supabase.co';
+    'https://ftbpxopkphlgbbtdomxz.supabase.co';
 
 const String supabasePublishableKey =
     'sb_publishable_jhq_TcHdcM7lgrXcqSxvTA_F9G-ZKxZ';
@@ -25,7 +26,7 @@ Future<void> main() async {
     publishableKey: supabasePublishableKey,
   );
 
-  final dataSource = CourseApiService(apiBaseUrl);
+  final dataSource = CourseSupabaseService();
   final repository = CourseRepository(dataSource);
 
   runApp(
