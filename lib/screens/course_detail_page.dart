@@ -14,6 +14,93 @@ class CourseDetailPage extends StatelessWidget {
     required this.course,
   });
 
+  Future<void> _deleteCourse(BuildContext context) async {
+    // Pastikan course memiliki ID untuk dihapus.
+    final id = course.id;
+
+    if (id == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Course tidak memiliki ID yang valid.'),
+        ),
+      );
+      return;
+    }
+
+    // Meminta konfirmasi sebelum menghapus.
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Hapus Course?'),
+          content: Text(
+            'Apakah Anda yakin ingin menghapus '
+            '"${course.title}"? Tindakan ini tidak dapat dibatalkan.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop(false);
+              },
+              child: const Text('Batal'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop(true);
+              },
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.red,
+              ),
+              child: const Text('Hapus'),
+            ),
+          ],
+        );
+      },
+    );
+
+    // Periksa apakah halaman masih aktif setelah dialog ditutup.
+    if (!context.mounted || confirmed != true) {
+      return;
+    }
+
+    try {
+      // Menghapus course melalui provider.
+      await context.read<CourseProvider>().deleteCourse(
+            id,
+            course.code,
+          );
+
+      // Periksa kembali setelah operasi asynchronous selesai.
+      if (!context.mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Course "${course.title}" berhasil dihapus.',
+          ),
+        ),
+      );
+
+      // Kembali ke halaman sebelumnya setelah berhasil.
+      Navigator.of(context).pop();
+    } catch (e) {
+      if (!context.mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Gagal menghapus course: ${e.toString()}',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<CourseProvider>();
@@ -90,6 +177,24 @@ class CourseDetailPage extends StatelessWidget {
                       .read<CourseProvider>()
                       .toggleFavorite(course.code);
                 },
+              ),
+            ),
+            const Spacer(),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: provider.isSaving
+                    ? null
+                    : () => _deleteCourse(context),
+                icon: const Icon(Icons.delete),
+                label: const Text('Hapus Course'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 14,
+                  ),
+                ),
               ),
             ),
           ],
