@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../models/course.dart';
 import '../providers/course_provider.dart';
 import '../widgets/course_summary_card.dart';
+import 'course_form_page.dart';
 
 class CourseHomePage extends StatelessWidget {
   const CourseHomePage({super.key});
@@ -20,6 +21,20 @@ class CourseHomePage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Course Explorer'),
         centerTitle: true,
+        actions: [
+          IconButton(
+            tooltip: 'Tambah Course',
+            icon: const Icon(Icons.add),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const CourseFormPage(),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: RefreshIndicator(
         onRefresh: () => context.read<CourseProvider>().loadCourses(),
@@ -68,6 +83,7 @@ class CourseHomePage extends StatelessWidget {
             ),
             const SizedBox(height: 20),
 
+            // Loading state.
             if (courseProvider.isLoading)
               const Padding(
                 padding: EdgeInsets.all(32),
@@ -75,6 +91,8 @@ class CourseHomePage extends StatelessWidget {
                   child: CircularProgressIndicator(),
                 ),
               )
+
+            // Error state dan tombol retry.
             else if (courseProvider.error != null)
               Card(
                 child: Padding(
@@ -98,7 +116,9 @@ class CourseHomePage extends StatelessWidget {
                       const SizedBox(height: 12),
                       ElevatedButton.icon(
                         onPressed: () {
-                          context.read<CourseProvider>().loadCourses();
+                          context
+                              .read<CourseProvider>()
+                              .loadCourses();
                         },
                         icon: const Icon(Icons.refresh),
                         label: const Text('Coba Lagi'),
@@ -107,6 +127,8 @@ class CourseHomePage extends StatelessWidget {
                   ),
                 ),
               )
+
+            // Empty state.
             else if (courses.isEmpty)
               const Padding(
                 padding: EdgeInsets.all(24),
@@ -114,6 +136,8 @@ class CourseHomePage extends StatelessWidget {
                   child: Text('Belum ada data mata kuliah.'),
                 ),
               )
+
+            // Success state: daftar mata kuliah.
             else ...[
               Text(
                 'Daftar Mata Kuliah (${courses.length})',
@@ -149,7 +173,9 @@ class CourseHomePage extends StatelessWidget {
         ),
         title: Text(
           course.title,
-          style: const TextStyle(fontWeight: FontWeight.w600),
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+          ),
         ),
         subtitle: Text(
           'Kode: ${course.code}\n'

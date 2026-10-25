@@ -11,6 +11,7 @@ class CourseProvider extends ChangeNotifier {
 
   List<Course> courses = [];
   bool isLoading = false;
+  bool isSaving = false;
   String? error;
 
   final Set<String> _favorites = {};
@@ -52,6 +53,33 @@ class CourseProvider extends ChangeNotifier {
       error = e.toString();
     } finally {
       isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Membuat course baru dan memuat ulang daftar setelah berhasil.
+  Future<Course> createCourse(Course course) async {
+    if (isSaving) {
+      throw Exception('Penyimpanan course sedang berlangsung');
+    }
+
+    isSaving = true;
+    notifyListeners();
+
+    try {
+      final createdCourse = await repository.createCourse(course);
+
+      await loadCourses();
+
+      if (error != null) {
+        throw Exception(
+          'Course berhasil dibuat, tetapi daftar gagal dimuat ulang: $error',
+        );
+      }
+
+      return createdCourse;
+    } finally {
+      isSaving = false;
       notifyListeners();
     }
   }
