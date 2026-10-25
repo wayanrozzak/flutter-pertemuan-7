@@ -10,14 +10,16 @@ class CourseApiService {
 
   final String baseUrl;
 
-  // HTTP GET: Mengambil seluruh data course
+  // HTTP GET: Mengambil seluruh data course.
   Future<List<Course>> getCourses() async {
     final response = await http.get(
       Uri.parse('$baseUrl/courses'),
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Gagal mengambil course');
+      throw Exception(
+        'Gagal mengambil course: HTTP ${response.statusCode}',
+      );
     }
 
     final List<dynamic> data =
@@ -32,7 +34,7 @@ class CourseApiService {
         .toList();
   }
 
-  // HTTP POST: Membuat course baru
+  // HTTP POST: Membuat course baru.
   Future<Course> createCourse(Course course) async {
     final response = await http.post(
       Uri.parse('$baseUrl/courses'),
@@ -49,6 +51,29 @@ class CourseApiService {
       );
     }
 
-    throw Exception('Gagal membuat course');
+    throw Exception(
+      'Gagal membuat course: HTTP ${response.statusCode}',
+    );
+  }
+
+  // HTTP PUT: Memperbarui course berdasarkan ID.
+  Future<void> updateCourse(
+    int id,
+    Course course,
+  ) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/courses/$id'),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode(course.toJson()),
+    );
+
+    if (response.statusCode < 200 ||
+        response.statusCode >= 300) {
+      throw Exception(
+        'Gagal memperbarui course: HTTP ${response.statusCode}',
+      );
+    }
   }
 }

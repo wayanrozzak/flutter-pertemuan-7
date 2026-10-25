@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../models/course.dart';
 import '../providers/course_provider.dart';
 import '../widgets/course_summary_card.dart';
+import 'course_detail_page.dart';
 import 'course_form_page.dart';
 
 class CourseHomePage extends StatelessWidget {
@@ -37,7 +38,8 @@ class CourseHomePage extends StatelessWidget {
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: () => context.read<CourseProvider>().loadCourses(),
+        onRefresh: () =>
+            context.read<CourseProvider>().loadCourses(),
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
@@ -133,11 +135,13 @@ class CourseHomePage extends StatelessWidget {
               const Padding(
                 padding: EdgeInsets.all(24),
                 child: Center(
-                  child: Text('Belum ada data mata kuliah.'),
+                  child: Text(
+                    'Belum ada data mata kuliah.',
+                  ),
                 ),
               )
 
-            // Success state: daftar mata kuliah.
+            // Daftar mata kuliah.
             else ...[
               Text(
                 'Daftar Mata Kuliah (${courses.length})',
@@ -163,7 +167,8 @@ class CourseHomePage extends StatelessWidget {
     Course course,
     CourseProvider provider,
   ) {
-    final isFavorite = provider.isFavorite(course.title);
+    // Gunakan kode course secara konsisten untuk favorit.
+    final isFavorite = provider.isFavorite(course.code);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
@@ -182,16 +187,32 @@ class CourseHomePage extends StatelessWidget {
           'SKS: ${course.credits} • Status: ${course.status}',
         ),
         isThreeLine: true,
+
+        // Klik kartu untuk membuka halaman detail.
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => CourseDetailPage(
+                course: course,
+              ),
+            ),
+          );
+        },
+
+        // Tombol favorit tetap terpisah dari navigasi detail.
         trailing: IconButton(
           tooltip: isFavorite
               ? 'Hapus dari favorit'
               : 'Tambahkan ke favorit',
           icon: Icon(
-            isFavorite ? Icons.favorite : Icons.favorite_border,
+            isFavorite
+                ? Icons.favorite
+                : Icons.favorite_border,
             color: isFavorite ? Colors.red : null,
           ),
           onPressed: () {
-            provider.toggleFavorite(course.title);
+            provider.toggleFavorite(course.code);
           },
         ),
       ),

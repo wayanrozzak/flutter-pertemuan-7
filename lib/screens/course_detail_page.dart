@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../models/course.dart';
 import '../providers/course_provider.dart';
+import 'course_edit_page.dart';
 
 class CourseDetailPage extends StatelessWidget {
   final Course course;
@@ -21,6 +22,22 @@ class CourseDetailPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Detail Mata Kuliah'),
+        actions: [
+          IconButton(
+            tooltip: 'Edit Course',
+            icon: const Icon(Icons.edit),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => CourseEditPage(
+                    course: course,
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(20),
@@ -50,7 +67,9 @@ class CourseDetailPage extends StatelessWidget {
             Card(
               child: ListTile(
                 leading: Icon(
-                  isFavorite ? Icons.favorite : Icons.favorite_border,
+                  isFavorite
+                      ? Icons.favorite
+                      : Icons.favorite_border,
                   color: isFavorite ? Colors.red : null,
                 ),
                 title: Text(
@@ -88,7 +107,9 @@ class CourseDetailPage extends StatelessWidget {
             width: 90,
             child: Text(
               label,
-              style: const TextStyle(fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
           Expanded(child: Text(value)),
