@@ -7,14 +7,59 @@ import '../providers/course_provider.dart';
 import '../widgets/course_summary_card.dart';
 import 'course_detail_page.dart';
 import 'course_form_page.dart';
+import 'favorites_page.dart';
 
-class CourseHomePage extends StatelessWidget {
+class CourseHomePage extends StatefulWidget {
   const CourseHomePage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final courseProvider = context.watch<CourseProvider>();
+  State<CourseHomePage> createState() => _CourseHomePageState();
+}
 
+class _CourseHomePageState extends State<CourseHomePage> {
+  int _selectedIndex = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = context.watch<CourseProvider>();
+
+    final pages = [
+      _buildCoursePage(context, provider),
+      const FavoritesPage(),
+    ];
+
+    return Scaffold(
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: pages,
+      ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _selectedIndex,
+        onDestinationSelected: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.school_outlined),
+            selectedIcon: Icon(Icons.school),
+            label: 'Mata Kuliah',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.favorite_border),
+            selectedIcon: Icon(Icons.favorite),
+            label: 'Favorit',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCoursePage(
+    BuildContext context,
+    CourseProvider courseProvider,
+  ) {
     final courses = courseProvider.courses;
     final favorites = courseProvider.favorites;
 
@@ -62,8 +107,6 @@ class CourseHomePage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-
-            // Ringkasan mata kuliah dan favorit.
             Row(
               children: [
                 Expanded(
@@ -84,8 +127,6 @@ class CourseHomePage extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 20),
-
-            // Loading state.
             if (courseProvider.isLoading)
               const Padding(
                 padding: EdgeInsets.all(32),
@@ -93,8 +134,6 @@ class CourseHomePage extends StatelessWidget {
                   child: CircularProgressIndicator(),
                 ),
               )
-
-            // Error state dan tombol retry.
             else if (courseProvider.error != null)
               Card(
                 child: Padding(
@@ -129,19 +168,13 @@ class CourseHomePage extends StatelessWidget {
                   ),
                 ),
               )
-
-            // Empty state.
             else if (courses.isEmpty)
               const Padding(
                 padding: EdgeInsets.all(24),
                 child: Center(
-                  child: Text(
-                    'Belum ada data mata kuliah.',
-                  ),
+                  child: Text('Belum ada data mata kuliah.'),
                 ),
               )
-
-            // Daftar mata kuliah.
             else ...[
               Text(
                 'Daftar Mata Kuliah (${courses.length})',
@@ -167,7 +200,6 @@ class CourseHomePage extends StatelessWidget {
     Course course,
     CourseProvider provider,
   ) {
-    // Gunakan kode course secara konsisten untuk favorit.
     final isFavorite = provider.isFavorite(course.code);
 
     return Card(
@@ -187,20 +219,14 @@ class CourseHomePage extends StatelessWidget {
           'SKS: ${course.credits} • Status: ${course.status}',
         ),
         isThreeLine: true,
-
-        // Klik kartu untuk membuka halaman detail.
         onTap: () {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => CourseDetailPage(
-                course: course,
-              ),
+              builder: (_) => CourseDetailPage(course: course),
             ),
           );
         },
-
-        // Tombol favorit tetap terpisah dari navigasi detail.
         trailing: IconButton(
           tooltip: isFavorite
               ? 'Hapus dari favorit'
