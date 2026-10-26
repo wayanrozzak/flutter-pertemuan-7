@@ -1,8 +1,9 @@
-﻿-- Tahap 11: Dokumentasi schema tabel courses
--- Schema telah dibuat dan diverifikasi di Supabase Dashboard.
 
--- Kolom:
--- id         : bigint identity, primary key
+-- Tahap 11: Dokumentasi schema tabel courses
+-- Tabel sudah dibuat dan diverifikasi di Supabase Dashboard.
+
+-- Struktur:
+-- id         : bigint, identity, primary key
 -- code       : text, unique, not null
 -- title      : text, not null
 -- credits    : integer, not null
@@ -12,12 +13,12 @@
 -- CHECK constraint:
 -- status IN ('planned', 'active', 'done')
 
--- Row Level Security:
--- Enabled pada public.courses.
+-- RLS:
+-- Enabled pada public.courses
 
 -- Policy yang telah diverifikasi:
 -- Lab allow read courses
--- SELECT TO anon, authenticated USING (true).
+-- SELECT TO anon, authenticated USING (true);
 
 -- Data awal:
 -- IF101 | Algoritma dan Pemrograman | 3 | active
