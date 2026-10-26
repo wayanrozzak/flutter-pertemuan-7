@@ -7,14 +7,17 @@ import '../models/course.dart';
 import 'course_data_source.dart';
 
 class CourseApiService implements CourseDataSource {
-  CourseApiService(this.baseUrl);
+  CourseApiService(
+    this.baseUrl, {
+    http.Client? client,
+  }) : _client = client ?? http.Client();
 
   final String baseUrl;
+  final http.Client _client;
 
-  // HTTP GET: Mengambil seluruh data course.
   @override
   Future<List<Course>> getCourses() async {
-    final response = await http.get(
+    final response = await _client.get(
       Uri.parse('$baseUrl/courses'),
     );
 
@@ -30,27 +33,26 @@ class CourseApiService implements CourseDataSource {
     return data
         .map(
           (e) => Course.fromJson(
-            e as Map<String, dynamic>,
+            Map<String, dynamic>.from(e as Map),
           ),
         )
         .toList();
   }
 
-  // HTTP POST: Membuat course baru.
   @override
   Future<Course> createCourse(Course course) async {
-    final response = await http.post(
+    final response = await _client.post(
       Uri.parse('$baseUrl/courses'),
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: {'Content-Type': 'application/json'},
       body: jsonEncode(course.toJson()),
     );
 
     if (response.statusCode == 200 ||
         response.statusCode == 201) {
       return Course.fromJson(
-        jsonDecode(response.body) as Map<String, dynamic>,
+        Map<String, dynamic>.from(
+          jsonDecode(response.body) as Map,
+        ),
       );
     }
 
@@ -59,17 +61,11 @@ class CourseApiService implements CourseDataSource {
     );
   }
 
-  // HTTP PUT: Memperbarui course berdasarkan ID.
   @override
-  Future<void> updateCourse(
-    int id,
-    Course course,
-  ) async {
-    final response = await http.put(
+  Future<void> updateCourse(int id, Course course) async {
+    final response = await _client.put(
       Uri.parse('$baseUrl/courses/$id'),
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: {'Content-Type': 'application/json'},
       body: jsonEncode(course.toJson()),
     );
 
@@ -81,10 +77,9 @@ class CourseApiService implements CourseDataSource {
     }
   }
 
-  // HTTP DELETE: Menghapus course berdasarkan ID.
   @override
   Future<void> deleteCourse(int id) async {
-    final response = await http.delete(
+    final response = await _client.delete(
       Uri.parse('$baseUrl/courses/$id'),
     );
 
@@ -94,5 +89,9 @@ class CourseApiService implements CourseDataSource {
         'Gagal menghapus course: HTTP ${response.statusCode}',
       );
     }
+  }
+
+  void dispose() {
+    _client.close();
   }
 }
