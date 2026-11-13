@@ -4,7 +4,9 @@ import 'package:provider/provider.dart';
 
 import '../models/course.dart';
 import '../providers/course_provider.dart';
+import '../services/auth_service.dart';
 import '../widgets/course_summary_card.dart';
+
 import 'course_detail_page.dart';
 import 'course_form_page.dart';
 import 'favorites_page.dart';
@@ -18,6 +20,69 @@ class CourseHomePage extends StatefulWidget {
 
 class _CourseHomePageState extends State<CourseHomePage> {
   int _selectedIndex = 0;
+  bool _isLoggingOut = false;
+
+  Future<void> _logout() async {
+    if (_isLoggingOut) return;
+
+    setState(() {
+      _isLoggingOut = true;
+    });
+
+    try {
+      await AuthService().signOut();
+
+      // AuthGate akan otomatis mengarahkan pengguna
+      // kembali ke LoginPage setelah session berakhir.
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Logout gagal: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoggingOut = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _confirmLogout() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Konfirmasi Logout'),
+          content: const Text(
+            'Apakah Anda yakin ingin keluar dari akun?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext, false);
+              },
+              child: const Text('Batal'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.pop(dialogContext, true);
+              },
+              child: const Text('Logout'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true && mounted) {
+      await _logout();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -63,6 +128,8 @@ class _CourseHomePageState extends State<CourseHomePage> {
     final courses = courseProvider.courses;
     final favorites = courseProvider.favorites;
 
+    final user = AuthService().currentUser;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Course Explorer'),
@@ -80,6 +147,19 @@ class _CourseHomePageState extends State<CourseHomePage> {
               );
             },
           ),
+          IconButton(
+            tooltip: 'Logout',
+            icon: _isLoggingOut
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                    ),
+                  )
+                : const Icon(Icons.logout),
+            onPressed: _isLoggingOut ? null : _confirmLogout,
+          ),
         ],
       ),
       body: RefreshIndicator(
@@ -96,9 +176,25 @@ class _CourseHomePageState extends State<CourseHomePage> {
               ),
             ),
             const SizedBox(height: 8),
+
             const Text('Wayan Muizul Rozzak'),
             const Text('NIM: 2415051111'),
+
+            const SizedBox(height: 12),
+
+            if (user?.email != null)
+              Card(
+                child: ListTile(
+                  leading: const CircleAvatar(
+                    child: Icon(Icons.person),
+                  ),
+                  title: const Text('Pengguna Login'),
+                  subtitle: Text(user!.email!),
+                ),
+              ),
+
             const SizedBox(height: 8),
+
             const Text(
               'Tahap 12: Refactoring Struktur Folder',
               style: TextStyle(
@@ -106,7 +202,9 @@ class _CourseHomePageState extends State<CourseHomePage> {
                 fontWeight: FontWeight.w600,
               ),
             ),
+
             const SizedBox(height: 20),
+
             Row(
               children: [
                 Expanded(
@@ -126,7 +224,9 @@ class _CourseHomePageState extends State<CourseHomePage> {
                 ),
               ],
             ),
+
             const SizedBox(height: 20),
+
             if (courseProvider.isLoading)
               const Padding(
                 padding: EdgeInsets.all(32),
@@ -172,7 +272,9 @@ class _CourseHomePageState extends State<CourseHomePage> {
               const Padding(
                 padding: EdgeInsets.all(24),
                 child: Center(
-                  child: Text('Belum ada data mata kuliah.'),
+                  child: Text(
+                    'Belum ada data mata kuliah.',
+                  ),
                 ),
               )
             else ...[
@@ -181,6 +283,7 @@ class _CourseHomePageState extends State<CourseHomePage> {
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 8),
+
               ...courses.map(
                 (course) => _buildCourseCard(
                   context,
