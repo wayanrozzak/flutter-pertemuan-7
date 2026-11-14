@@ -2,12 +2,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:firebase_core/firebase_core.dart';
+
+import 'firebase_options.dart';
 
 import 'providers/course_provider.dart';
 import 'repositories/course_repository.dart';
 import 'screens/course_home_page.dart';
 import 'services/course_supabase_service.dart';
 import 'services/auth_service.dart';
+import 'services/notification_service.dart';
 import 'pages/login_page.dart';
 
 const String apiBaseUrl =
@@ -22,14 +26,25 @@ const String supabasePublishableKey =
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // 1. Inisialisasi Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  // 2. Inisialisasi Firebase Cloud Messaging
+  await NotificationService().initialize();
+
+  // 3. Inisialisasi Supabase
   await Supabase.initialize(
     url: supabaseUrl,
     publishableKey: supabasePublishableKey,
   );
 
+  // 4. Inisialisasi Repository dan Provider
   final dataSource = CourseSupabaseService();
   final repository = CourseRepository(dataSource);
 
+  // 5. Menjalankan aplikasi
   runApp(
     ChangeNotifierProvider(
       create: (_) => CourseProvider(repository)..loadCourses(),
