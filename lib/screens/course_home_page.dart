@@ -7,6 +7,7 @@ import '../providers/course_provider.dart';
 import '../services/auth_service.dart';
 import '../services/profile_service.dart';
 import '../widgets/course_summary_card.dart';
+import '../widgets/role_guard.dart';
 
 import 'course_detail_page.dart';
 import 'course_form_page.dart';
@@ -23,7 +24,6 @@ class _CourseHomePageState extends State<CourseHomePage> {
   int _selectedIndex = 0;
   bool _isLoggingOut = false;
 
-  // Mengambil profil pengguna dari Supabase
   late final Future<UserProfile?> _profileFuture;
 
   @override
@@ -32,95 +32,6 @@ class _CourseHomePageState extends State<CourseHomePage> {
     _profileFuture = ProfileService().getMyProfile();
   }
 
-  // Widget untuk menampilkan profil pengguna
-  Widget _buildProfileCard() {
-    return FutureBuilder<UserProfile?>(
-      future: _profileFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Card(
-            child: Padding(
-              padding: EdgeInsets.all(20),
-              child: Center(
-                child: CircularProgressIndicator(),
-              ),
-            ),
-          );
-        }
-
-        if (snapshot.hasError || snapshot.data == null) {
-          return Card(
-            child: ListTile(
-              leading: const Icon(
-                Icons.error_outline,
-                color: Colors.red,
-              ),
-              title: const Text('Gagal memuat profil'),
-              subtitle: Text(
-                snapshot.hasError
-                    ? 'Terjadi kesalahan saat mengambil profil.'
-                    : 'Data profil tidak ditemukan.',
-              ),
-            ),
-          );
-        }
-
-        final profile = snapshot.data!;
-
-        return Card(
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: CircleAvatar(
-                    child: Icon(Icons.person),
-                  ),
-                  title: Text(
-                    'Profil Pengguna',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                const Divider(),
-
-                ListTile(
-                  leading: const Icon(Icons.badge_outlined),
-                  title: const Text('Nama'),
-                  subtitle: Text(
-                    profile.name.isEmpty
-                        ? '-'
-                        : profile.name,
-                  ),
-                ),
-
-                ListTile(
-                  leading: const Icon(Icons.email_outlined),
-                  title: const Text('Email'),
-                  subtitle: Text(profile.email),
-                ),
-
-                ListTile(
-                  leading: const Icon(
-                    Icons.admin_panel_settings_outlined,
-                  ),
-                  title: const Text('Role'),
-                  subtitle: Text(
-                    profile.role.toUpperCase(),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  // Fungsi logout
   Future<void> _logout() async {
     if (_isLoggingOut) return;
 
@@ -130,16 +41,12 @@ class _CourseHomePageState extends State<CourseHomePage> {
 
     try {
       await AuthService().signOut();
-
-      // AuthGate akan otomatis mengarahkan pengguna
-      // kembali ke LoginPage setelah session berakhir.
     } catch (e) {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Logout gagal: $e'),
-          backgroundColor: Colors.red,
+          content: Text('Gagal logout: $e'),
         ),
       );
     } finally {
@@ -151,7 +58,6 @@ class _CourseHomePageState extends State<CourseHomePage> {
     }
   }
 
-  // Dialog konfirmasi logout
   Future<void> _confirmLogout() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -159,7 +65,7 @@ class _CourseHomePageState extends State<CourseHomePage> {
         return AlertDialog(
           title: const Text('Konfirmasi Logout'),
           content: const Text(
-            'Apakah Anda yakin ingin keluar dari akun?',
+            'Apakah Anda yakin ingin keluar dari aplikasi?',
           ),
           actions: [
             TextButton(
@@ -184,19 +90,122 @@ class _CourseHomePageState extends State<CourseHomePage> {
     }
   }
 
+  Widget _profileInfo(
+    IconData icon,
+    String label,
+    String value,
+  ) {
+    return Row(
+      children: [
+        Icon(
+          icon,
+          size: 20,
+          color: Theme.of(context).colorScheme.primary,
+        ),
+        const SizedBox(width: 10),
+        Text(
+          '$label: ',
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value.isEmpty ? '-' : value,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildProfileCard() {
+    return FutureBuilder<UserProfile?>(
+      future: _profileFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Card(
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: Center(
+                child: CircularProgressIndicator(),
+              ),
+            ),
+          );
+        }
+
+        if (snapshot.hasError) {
+          return Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                'Gagal memuat profil: ${snapshot.error}',
+              ),
+            ),
+          );
+        }
+
+        final profile = snapshot.data;
+
+        if (profile == null) {
+          return const Card(
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: Text('Data profil tidak ditemukan.'),
+            ),
+          );
+        }
+
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Profil Pengguna',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _profileInfo(
+                  Icons.person,
+                  'Nama',
+                  profile.name,
+                ),
+                const SizedBox(height: 8),
+                _profileInfo(
+                  Icons.email,
+                  'Email',
+                  profile.email,
+                ),
+                const SizedBox(height: 8),
+                _profileInfo(
+                  Icons.admin_panel_settings,
+                  'Role',
+                  profile.role.toUpperCase(),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<CourseProvider>();
 
-    final pages = [
-      _buildCoursePage(context, provider),
-      const FavoritesPage(),
-    ];
-
     return Scaffold(
       body: IndexedStack(
         index: _selectedIndex,
-        children: pages,
+        children: [
+          _buildCoursePage(context, provider),
+          const FavoritesPage(),
+        ],
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
@@ -209,45 +218,58 @@ class _CourseHomePageState extends State<CourseHomePage> {
           NavigationDestination(
             icon: Icon(Icons.school_outlined),
             selectedIcon: Icon(Icons.school),
-            label: 'Mata Kuliah',
+            label: 'Courses',
           ),
           NavigationDestination(
-            icon: Icon(Icons.favorite_border),
+            icon: Icon(Icons.favorite_outline),
             selectedIcon: Icon(Icons.favorite),
-            label: 'Favorit',
+            label: 'Favorites',
           ),
         ],
       ),
     );
   }
 
-  // Halaman utama Course Explorer
   Widget _buildCoursePage(
     BuildContext context,
-    CourseProvider courseProvider,
+    CourseProvider provider,
   ) {
-    final courses = courseProvider.courses;
-    final favorites = courseProvider.favorites;
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Course Explorer'),
-        centerTitle: true,
+        title: const Text('Flutter Course Explorer'),
         actions: [
-          IconButton(
-            tooltip: 'Tambah Course',
-            icon: const Icon(Icons.add),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const CourseFormPage(),
+          // Tombol tambah hanya untuk owner dan admin.
+          FutureBuilder<UserProfile?>(
+            future: _profileFuture,
+            builder: (context, snapshot) {
+              if (!snapshot.hasData || snapshot.hasError) {
+                return const SizedBox.shrink();
+              }
+
+              final profile = snapshot.data!;
+
+              return RoleGuard(
+                role: profile.role,
+                allowed: const ['owner', 'admin'],
+                child: IconButton(
+                  tooltip: 'Tambah Course',
+                  icon: const Icon(Icons.add),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const CourseFormPage(),
+                      ),
+                    );
+                  },
                 ),
               );
             },
           ),
+
           IconButton(
             tooltip: 'Logout',
+            onPressed: _isLoggingOut ? null : _confirmLogout,
             icon: _isLoggingOut
                 ? const SizedBox(
                     width: 20,
@@ -257,13 +279,12 @@ class _CourseHomePageState extends State<CourseHomePage> {
                     ),
                   )
                 : const Icon(Icons.logout),
-            onPressed: _isLoggingOut ? null : _confirmLogout,
           ),
         ],
       ),
+
       body: RefreshIndicator(
-        onRefresh: () =>
-            context.read<CourseProvider>().loadCourses(),
+        onRefresh: provider.loadCourses,
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
@@ -274,43 +295,39 @@ class _CourseHomePageState extends State<CourseHomePage> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 4),
+            const Text(
+              'Jelajahi materi pembelajaran Flutter.',
+            ),
+            const SizedBox(height: 16),
 
-            const Text('Wayan Muizul Rozzak'),
-            const Text('NIM: 2415051111'),
-
-            const SizedBox(height: 12),
-
-            // Profil pengguna: Nama, Email, dan Role
             _buildProfileCard(),
 
-            const SizedBox(height: 8),
+            const SizedBox(height: 16),
 
             const Text(
-              'Tahap 12: Refactoring Struktur Folder',
+              'Course Overview',
               style: TextStyle(
-                color: Colors.indigo,
-                fontWeight: FontWeight.w600,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
               ),
             ),
+            const SizedBox(height: 12),
 
-            const SizedBox(height: 20),
-
-            // Ringkasan mata kuliah dan favorit
             Row(
               children: [
                 Expanded(
                   child: CourseSummaryCard(
-                    title: 'Total Mata Kuliah',
-                    value: '${courses.length}',
-                    icon: Icons.school,
+                    title: 'Total Courses',
+                    value: provider.courses.length.toString(),
+                    icon: Icons.menu_book,
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: CourseSummaryCard(
-                    title: 'Mata Kuliah Favorit',
-                    value: '${favorites.length}',
+                    title: 'Favorites',
+                    value: provider.favoriteCourses.length.toString(),
                     icon: Icons.favorite,
                   ),
                 ),
@@ -319,103 +336,90 @@ class _CourseHomePageState extends State<CourseHomePage> {
 
             const SizedBox(height: 20),
 
-            // Status data mata kuliah
-            if (courseProvider.isLoading)
+            const Text(
+              'Daftar Course',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            if (provider.isLoading)
               const Padding(
                 padding: EdgeInsets.all(32),
                 child: Center(
                   child: CircularProgressIndicator(),
                 ),
               )
-            else if (courseProvider.error != null)
+            else if (provider.error != null)
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      const Icon(
-                        Icons.error_outline,
-                        color: Colors.red,
-                        size: 40,
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Gagal memuat data mata kuliah',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(courseProvider.error!),
-                      const SizedBox(height: 12),
-                      ElevatedButton.icon(
-                        onPressed: () {
-                          context
-                              .read<CourseProvider>()
-                              .loadCourses();
-                        },
-                        icon: const Icon(Icons.refresh),
-                        label: const Text('Coba Lagi'),
-                      ),
-                    ],
-                  ),
-                ),
-              )
-            else if (courses.isEmpty)
-              const Padding(
-                padding: EdgeInsets.all(24),
-                child: Center(
                   child: Text(
-                    'Belum ada data mata kuliah.',
+                    provider.error!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
                   ),
                 ),
               )
-            else ...[
-              Text(
-                'Daftar Mata Kuliah (${courses.length})',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 8),
-
-              ...courses.map(
+            else if (provider.courses.isEmpty)
+              const Card(
+                child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Text(
+                    'Belum ada course yang tersedia.',
+                  ),
+                ),
+              )
+            else
+              ...provider.courses.map(
                 (course) => _buildCourseCard(
                   context,
+                  provider,
                   course,
-                  courseProvider,
                 ),
               ),
-            ],
           ],
         ),
       ),
     );
   }
 
-  // Widget kartu mata kuliah
   Widget _buildCourseCard(
     BuildContext context,
-    Course course,
     CourseProvider provider,
+    Course course,
   ) {
     final isFavorite = provider.isFavorite(course.code);
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 10),
+      margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
         leading: CircleAvatar(
-          child: Text(course.code),
-        ),
-        title: Text(
-          course.title,
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
+          child: Text(
+            course.code.isNotEmpty
+                ? course.code[0].toUpperCase()
+                : 'C',
           ),
         ),
+        title: Text(course.title),
         subtitle: Text(
-          'Kode: ${course.code}\n'
-          'SKS: ${course.credits} • Status: ${course.status}',
+          '${course.code} • ${course.credits} SKS • ${course.status}',
         ),
-        isThreeLine: true,
+        trailing: IconButton(
+          tooltip: isFavorite
+              ? 'Hapus dari favorit'
+              : 'Tambah ke favorit',
+          icon: Icon(
+            isFavorite ? Icons.favorite : Icons.favorite_border,
+            color: isFavorite ? Colors.red : null,
+          ),
+          onPressed: () {
+            provider.toggleFavorite(course.code);
+          },
+        ),
         onTap: () {
           Navigator.push(
             context,
@@ -424,20 +428,6 @@ class _CourseHomePageState extends State<CourseHomePage> {
             ),
           );
         },
-        trailing: IconButton(
-          tooltip: isFavorite
-              ? 'Hapus dari favorit'
-              : 'Tambahkan ke favorit',
-          icon: Icon(
-            isFavorite
-                ? Icons.favorite
-                : Icons.favorite_border,
-            color: isFavorite ? Colors.red : null,
-          ),
-          onPressed: () {
-            provider.toggleFavorite(course.code);
-          },
-        ),
       ),
     );
   }
