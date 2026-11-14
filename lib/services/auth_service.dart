@@ -2,21 +2,24 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AuthService {
-  // Mengakses Supabase Client
   final SupabaseClient _supabase = Supabase.instance.client;
 
-  // Register / membuat akun baru
   Future<AuthResponse> signUp({
     required String email,
     required String password,
+    String name = '',
+    String role = 'seeker',
   }) async {
     return await _supabase.auth.signUp(
       email: email,
       password: password,
+      data: {
+        'name': name,
+        'role': role,
+      },
     );
   }
 
-  // Login menggunakan email dan password
   Future<AuthResponse> signIn({
     required String email,
     required String password,
@@ -27,23 +30,14 @@ class AuthService {
     );
   }
 
-  // Logout dari akun
   Future<void> signOut() async {
     await _supabase.auth.signOut();
   }
 
-  // Mengambil data pengguna yang sedang login
-  User? get currentUser {
-    return _supabase.auth.currentUser;
-  }
+  User? get currentUser => _supabase.auth.currentUser;
 
-  // Memantau perubahan status autentikasi
-  Stream<AuthState> get authStateChanges {
-    return _supabase.auth.onAuthStateChange;
-  }
+  Stream<AuthState> get authStateChanges =>
+      _supabase.auth.onAuthStateChange;
 
-  // Memeriksa apakah pengguna sudah login
-  bool get isLoggedIn {
-    return currentUser != null;
-  }
+  bool get isLoggedIn => currentUser != null;
 }

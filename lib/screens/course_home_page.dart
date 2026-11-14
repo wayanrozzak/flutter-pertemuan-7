@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../models/course.dart';
 import '../providers/course_provider.dart';
 import '../services/auth_service.dart';
+import '../services/profile_service.dart';
 import '../widgets/course_summary_card.dart';
 
 import 'course_detail_page.dart';
@@ -22,6 +23,104 @@ class _CourseHomePageState extends State<CourseHomePage> {
   int _selectedIndex = 0;
   bool _isLoggingOut = false;
 
+  // Mengambil profil pengguna dari Supabase
+  late final Future<UserProfile?> _profileFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _profileFuture = ProfileService().getMyProfile();
+  }
+
+  // Widget untuk menampilkan profil pengguna
+  Widget _buildProfileCard() {
+    return FutureBuilder<UserProfile?>(
+      future: _profileFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Card(
+            child: Padding(
+              padding: EdgeInsets.all(20),
+              child: Center(
+                child: CircularProgressIndicator(),
+              ),
+            ),
+          );
+        }
+
+        if (snapshot.hasError || snapshot.data == null) {
+          return Card(
+            child: ListTile(
+              leading: const Icon(
+                Icons.error_outline,
+                color: Colors.red,
+              ),
+              title: const Text('Gagal memuat profil'),
+              subtitle: Text(
+                snapshot.hasError
+                    ? 'Terjadi kesalahan saat mengambil profil.'
+                    : 'Data profil tidak ditemukan.',
+              ),
+            ),
+          );
+        }
+
+        final profile = snapshot.data!;
+
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: CircleAvatar(
+                    child: Icon(Icons.person),
+                  ),
+                  title: Text(
+                    'Profil Pengguna',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const Divider(),
+
+                ListTile(
+                  leading: const Icon(Icons.badge_outlined),
+                  title: const Text('Nama'),
+                  subtitle: Text(
+                    profile.name.isEmpty
+                        ? '-'
+                        : profile.name,
+                  ),
+                ),
+
+                ListTile(
+                  leading: const Icon(Icons.email_outlined),
+                  title: const Text('Email'),
+                  subtitle: Text(profile.email),
+                ),
+
+                ListTile(
+                  leading: const Icon(
+                    Icons.admin_panel_settings_outlined,
+                  ),
+                  title: const Text('Role'),
+                  subtitle: Text(
+                    profile.role.toUpperCase(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // Fungsi logout
   Future<void> _logout() async {
     if (_isLoggingOut) return;
 
@@ -52,6 +151,7 @@ class _CourseHomePageState extends State<CourseHomePage> {
     }
   }
 
+  // Dialog konfirmasi logout
   Future<void> _confirmLogout() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -121,14 +221,13 @@ class _CourseHomePageState extends State<CourseHomePage> {
     );
   }
 
+  // Halaman utama Course Explorer
   Widget _buildCoursePage(
     BuildContext context,
     CourseProvider courseProvider,
   ) {
     final courses = courseProvider.courses;
     final favorites = courseProvider.favorites;
-
-    final user = AuthService().currentUser;
 
     return Scaffold(
       appBar: AppBar(
@@ -182,16 +281,8 @@ class _CourseHomePageState extends State<CourseHomePage> {
 
             const SizedBox(height: 12),
 
-            if (user?.email != null)
-              Card(
-                child: ListTile(
-                  leading: const CircleAvatar(
-                    child: Icon(Icons.person),
-                  ),
-                  title: const Text('Pengguna Login'),
-                  subtitle: Text(user!.email!),
-                ),
-              ),
+            // Profil pengguna: Nama, Email, dan Role
+            _buildProfileCard(),
 
             const SizedBox(height: 8),
 
@@ -205,6 +296,7 @@ class _CourseHomePageState extends State<CourseHomePage> {
 
             const SizedBox(height: 20),
 
+            // Ringkasan mata kuliah dan favorit
             Row(
               children: [
                 Expanded(
@@ -227,6 +319,7 @@ class _CourseHomePageState extends State<CourseHomePage> {
 
             const SizedBox(height: 20),
 
+            // Status data mata kuliah
             if (courseProvider.isLoading)
               const Padding(
                 padding: EdgeInsets.all(32),
@@ -298,6 +391,7 @@ class _CourseHomePageState extends State<CourseHomePage> {
     );
   }
 
+  // Widget kartu mata kuliah
   Widget _buildCourseCard(
     BuildContext context,
     Course course,
