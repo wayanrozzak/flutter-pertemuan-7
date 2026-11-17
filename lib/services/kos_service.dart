@@ -9,6 +9,7 @@ class KosService {
   static bool isUsingFallback = false;
 
   // In-memory fallback dataset lengkap dengan foto halaman, foto kamar, kamar mandi, & fasilitas
+  // menggunakan URL referensi yang diminta oleh pengguna
   static final List<KosModel> _fallbackKos = [
     KosModel(
       id: 'kos-demo-01',
@@ -17,9 +18,9 @@ class KosService {
       address: 'Jl. Udayana No. 12, Singaraja',
       price: 650000,
       yardImageUrl:
-          'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=600&auto=format&fit=crop&q=60',
+          'https://www.brighton.co.id/about/articles-all/10-desain-rumah-kos-kosan-yang-sehat',
       roomImageUrl:
-          'https://images.unsplash.com/photo-1598928506311-c55ded91a20c?w=600&auto=format&fit=crop&q=60',
+          'https://www.instagram.com/p/DYqy0HmIPoV/',
       bathroomType: 'dalam',
       facilities:
           'WiFi 50 Mbps, Kasur Springbed, Lemari 2 Pintu, Meja Belajar, Parkir Motor Aman, Listrik Token',
@@ -32,9 +33,9 @@ class KosService {
       address: 'Jl. Ahmad Yani Gg. 3 No. 5, Singaraja',
       price: 850000,
       yardImageUrl:
-          'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=600&auto=format&fit=crop&q=60',
+          'https://www.liputan6.com/hot/read/6410118/7-contoh-3-kamar-kos-di-halaman-rumah-untuk-usaha-pensiunan-sederhana-dan-mudah-dikelola',
       roomImageUrl:
-          'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=600&auto=format&fit=crop&q=60',
+          'https://www.appasco.com/renovasi-kamar-kos-jadi-nyaman-instagramable/',
       bathroomType: 'dalam',
       facilities:
           'AC Dingin, Kamar Mandi Dalam (Shower & Kloset Duduk), Dapur Bersama, Kulkas Bersama, CCTV 24 Jam',
@@ -47,9 +48,9 @@ class KosService {
       address: 'Jl. Ngurah Rai No. 45, Singaraja',
       price: 450000,
       yardImageUrl:
-          'https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=600&auto=format&fit=crop&q=60',
+          'https://www.instagram.com/p/CCkjimvgyF5/',
       roomImageUrl:
-          'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=600&auto=format&fit=crop&q=60',
+          'https://mandorpro.id/desain-kamar-kos-yang-bikin-betah/',
       bathroomType: 'luar',
       facilities:
           'Kasur Busa Tebal, Lemari Pakaian, Kamar Mandi Luar Bersih, Tempat Jemuran Luas, Parkir Motor',
@@ -59,12 +60,16 @@ class KosService {
 
   bool _isTableNotFound(Object e) {
     if (e is PostgrestException) {
-      return e.code == 'PGRST205' ||
-          e.message.toLowerCase().contains("could not find the table 'public.kos'") ||
-          e.message.toLowerCase().contains("relation \"public.kos\" does not exist") ||
-          e.message.toLowerCase().contains("column");
+      return true;
     }
-    return false;
+    final msg = e.toString().toLowerCase();
+    return msg.contains('pgrst205') ||
+        msg.contains('public.kos') ||
+        msg.contains('schema cache') ||
+        msg.contains('relation') ||
+        msg.contains('socketexception') ||
+        msg.contains('clientexception') ||
+        msg.contains('network');
   }
 
   Future<List<KosModel>> fetchAll() async {
@@ -76,12 +81,9 @@ class KosService {
       isUsingFallback = false;
       return (data as List).map((e) => KosModel.fromMap(e)).toList();
     } catch (e) {
-      if (_isTableNotFound(e)) {
-        debugPrint('[KosService] Menggunakan data simulasi lokal kos.');
-        isUsingFallback = true;
-        return List.from(_fallbackKos);
-      }
-      rethrow;
+      debugPrint('[KosService] Supabase fetchAll error: $e. Menggunakan data fallback lokal.');
+      isUsingFallback = true;
+      return List.from(_fallbackKos);
     }
   }
 
@@ -96,11 +98,9 @@ class KosService {
       isUsingFallback = false;
       return (data as List).map((e) => KosModel.fromMap(e)).toList();
     } catch (e) {
-      if (_isTableNotFound(e)) {
-        isUsingFallback = true;
-        return _fallbackKos.where((k) => k.ownerId == _uid).toList();
-      }
-      rethrow;
+      debugPrint('[KosService] Supabase fetchMyKos error: $e. Menggunakan data fallback lokal.');
+      isUsingFallback = true;
+      return _fallbackKos.where((k) => k.ownerId == _uid).toList();
     }
   }
 

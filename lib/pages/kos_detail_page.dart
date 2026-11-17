@@ -60,54 +60,96 @@ class _KosDetailPageState extends State<KosDetailPage> {
     return 'Rp ${buffer.toString().split('').reversed.join('')}';
   }
 
-  Widget _buildPhotoView(String? url, String label, IconData fallbackIcon) {
-    final hasUrl = url != null && url.trim().isNotEmpty;
+  Widget _buildPhotoView(
+    String? displayUrl,
+    String? rawUrl,
+    String label,
+    IconData fallbackIcon,
+  ) {
+    final hasDisplay = displayUrl != null && displayUrl.trim().isNotEmpty;
+    final hasRaw = rawUrl != null && rawUrl.trim().isNotEmpty;
 
-    return Container(
-      height: 220,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: Colors.grey.shade200,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          if (hasUrl)
-            Image.network(
-              url.trim(),
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) =>
-                  _buildPlaceholder(label, fallbackIcon),
-              loadingBuilder: (context, child, progress) {
-                if (progress == null) return child;
-                return const Center(child: CircularProgressIndicator());
-              },
-            )
-          else
-            _buildPlaceholder(label, fallbackIcon),
-          Positioned(
-            bottom: 12,
-            left: 12,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.black.withAlpha(160),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                label,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          height: 220,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: Colors.grey.shade200,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              if (hasDisplay)
+                Image.network(
+                  displayUrl.trim(),
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) =>
+                      _buildPlaceholder(label, fallbackIcon),
+                  loadingBuilder: (context, child, progress) {
+                    if (progress == null) return child;
+                    return const Center(child: CircularProgressIndicator());
+                  },
+                )
+              else
+                _buildPlaceholder(label, fallbackIcon),
+              Positioned(
+                bottom: 12,
+                left: 12,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withAlpha(160),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    label,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
+            ],
+          ),
+        ),
+        if (hasRaw) ...[
+          const SizedBox(height: 6),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Row(
+              children: [
+                Icon(
+                  rawUrl.contains('instagram.com')
+                      ? Icons.camera_alt_outlined
+                      : Icons.link_rounded,
+                  size: 14,
+                  color: Colors.grey.shade600,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    rawUrl,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.indigo.shade600,
+                      decoration: TextDecoration.underline,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
-      ),
+      ],
     );
   }
 
@@ -185,12 +227,14 @@ class _KosDetailPageState extends State<KosDetailPage> {
           // Tampilan Foto Aktif
           if (_activePhotoIndex == 0)
             _buildPhotoView(
+              kos.displayYardImageUrl,
               kos.yardImageUrl,
               'Halaman / Luar Kos',
               Icons.home_work_outlined,
             )
           else
             _buildPhotoView(
+              kos.displayRoomImageUrl,
               kos.roomImageUrl,
               'Dalam Kamar Kos',
               Icons.bedroom_parent_outlined,

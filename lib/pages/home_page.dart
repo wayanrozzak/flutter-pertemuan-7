@@ -737,11 +737,10 @@ create policy "kos_delete_own"
                       itemBuilder: (context, i) {
                         final kos = items[i];
                         final isMine = (kos.ownerId == myUid) || role == 'admin';
-                        final hasPhoto = kos.yardImageUrl.isNotEmpty ||
-                            kos.roomImageUrl.isNotEmpty;
-                        final displayPhoto = kos.yardImageUrl.isNotEmpty
-                            ? kos.yardImageUrl
-                            : kos.roomImageUrl;
+                        final displayPhoto = kos.displayYardImageUrl.isNotEmpty
+                            ? kos.displayYardImageUrl
+                            : kos.displayRoomImageUrl;
+                        final hasPhoto = displayPhoto.isNotEmpty;
 
                         return Card(
                           elevation: 1.5,
