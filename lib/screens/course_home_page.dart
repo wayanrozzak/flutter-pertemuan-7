@@ -6,6 +6,7 @@ import '../models/course.dart';
 import '../providers/course_provider.dart';
 import '../services/auth_service.dart';
 import '../services/profile_service.dart';
+import '../services/notification_service.dart';
 import '../widgets/course_summary_card.dart';
 import '../widgets/role_guard.dart';
 
@@ -30,6 +31,7 @@ class _CourseHomePageState extends State<CourseHomePage> {
   void initState() {
     super.initState();
     _profileFuture = ProfileService().getMyProfile();
+    NotificationService.instance.requestPermission();
   }
 
   Future<void> _logout() async {

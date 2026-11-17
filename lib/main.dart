@@ -1,8 +1,8 @@
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 import 'firebase_options.dart';
 
@@ -30,21 +30,19 @@ Future<void> main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
-  // 2. Inisialisasi Firebase Cloud Messaging
-  await NotificationService().initialize();
-
-  // 3. Inisialisasi Supabase
+  // 2. Inisialisasi Supabase
   await Supabase.initialize(
     url: supabaseUrl,
     publishableKey: supabasePublishableKey,
   );
 
-  // 4. Inisialisasi Repository dan Provider
+  // 3. Inisialisasi Repository dan Provider
   final dataSource = CourseSupabaseService();
   final repository = CourseRepository(dataSource);
 
-  // 5. Menjalankan aplikasi
+  // 4. Menjalankan aplikasi
   runApp(
     ChangeNotifierProvider(
       create: (_) => CourseProvider(repository)..loadCourses(),
