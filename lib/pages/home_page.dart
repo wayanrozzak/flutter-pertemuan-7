@@ -43,16 +43,28 @@ class _HomePageState extends State<HomePage> {
 
   void _showSqlInfoDialog() {
     const sql = '''
+-- 1. Buat / Perbarui tabel kos di Supabase SQL Editor:
 create table if not exists public.kos (
-    id         uuid primary key default gen_random_uuid(),
-    owner_id   uuid not null default auth.uid()
-               references auth.users(id) on delete cascade,
-    name       text not null,
-    address    text,
-    price      integer,
-    created_at timestamptz not null default now()
+    id              uuid primary key default gen_random_uuid(),
+    owner_id        uuid not null default auth.uid()
+                    references auth.users(id) on delete cascade,
+    name            text not null,
+    address         text,
+    price           integer,
+    yard_image_url  text,
+    room_image_url  text,
+    bathroom_type   text default 'dalam',
+    facilities      text,
+    created_at      timestamptz not null default now()
 );
 
+-- Jika tabel sudah ada, tambahkan kolom baru:
+alter table public.kos add column if not exists yard_image_url text;
+alter table public.kos add column if not exists room_image_url text;
+alter table public.kos add column if not exists bathroom_type text default 'dalam';
+alter table public.kos add column if not exists facilities text;
+
+-- 2. Aktifkan Row Level Security
 alter table public.kos enable row level security;
 
 create policy "kos_select_authenticated"
@@ -150,6 +162,11 @@ create policy "kos_delete_own"
     final addressC = TextEditingController(text: kos?.address ?? '');
     final priceC =
         TextEditingController(text: kos != null ? kos.price.toString() : '');
+    final yardImageC = TextEditingController(text: kos?.yardImageUrl ?? '');
+    final roomImageC = TextEditingController(text: kos?.roomImageUrl ?? '');
+    final facilitiesC = TextEditingController(text: kos?.facilities ?? '');
+    String bathroomType = kos?.bathroomType ?? 'dalam';
+
     final formKey = GlobalKey<FormState>();
 
     showDialog(
@@ -160,47 +177,167 @@ create policy "kos_delete_own"
           builder: (dialogContext, setDialogState) {
             return AlertDialog(
               title: Text(kos == null ? 'Tambah Kos Baru' : 'Edit Data Kos'),
-              content: Form(
-                key: formKey,
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      TextFormField(
-                        controller: nameC,
-                        decoration:
-                            const InputDecoration(labelText: 'Nama Kos'),
-                        validator: (v) => (v == null || v.trim().isEmpty)
-                            ? 'Nama kos wajib diisi'
-                            : null,
-                      ),
-                      const SizedBox(height: 8),
-                      TextFormField(
-                        controller: addressC,
-                        decoration:
-                            const InputDecoration(labelText: 'Alamat Kos'),
-                        validator: (v) => (v == null || v.trim().isEmpty)
-                            ? 'Alamat wajib diisi'
-                            : null,
-                      ),
-                      const SizedBox(height: 8),
-                      TextFormField(
-                        controller: priceC,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: 'Harga / Bulan (Rp)',
+              content: SizedBox(
+                width: double.maxFinite,
+                child: Form(
+                  key: formKey,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Nama Kos
+                        TextFormField(
+                          controller: nameC,
+                          decoration: const InputDecoration(
+                            labelText: 'Nama Kos *',
+                            prefixIcon: Icon(Icons.home),
+                          ),
+                          validator: (v) => (v == null || v.trim().isEmpty)
+                              ? 'Nama kos wajib diisi'
+                              : null,
                         ),
-                        validator: (v) {
-                          if (v == null || v.trim().isEmpty) {
-                            return 'Harga wajib diisi';
-                          }
-                          if (int.tryParse(v.trim()) == null) {
-                            return 'Harga harus berupa angka';
-                          }
-                          return null;
-                        },
-                      ),
-                    ],
+                        const SizedBox(height: 12),
+
+                        // Alamat
+                        TextFormField(
+                          controller: addressC,
+                          decoration: const InputDecoration(
+                            labelText: 'Alamat Kos *',
+                            prefixIcon: Icon(Icons.location_on),
+                          ),
+                          validator: (v) => (v == null || v.trim().isEmpty)
+                              ? 'Alamat wajib diisi'
+                              : null,
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Harga
+                        TextFormField(
+                          controller: priceC,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'Harga / Bulan (Rp) *',
+                            prefixIcon: Icon(Icons.payments_outlined),
+                          ),
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty) {
+                              return 'Harga wajib diisi';
+                            }
+                            if (int.tryParse(v.trim()) == null) {
+                              return 'Harga harus berupa angka';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Pilihan Kamar Mandi (Dalam / Luar)
+                        const Text(
+                          'Tipe Kamar Mandi *',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ChoiceChip(
+                                label: const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.shower, size: 16),
+                                    SizedBox(width: 4),
+                                    Text('KM Dalam'),
+                                  ],
+                                ),
+                                selected: bathroomType == 'dalam',
+                                onSelected: (sel) {
+                                  if (sel) {
+                                    setDialogState(() => bathroomType = 'dalam');
+                                  }
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: ChoiceChip(
+                                label: const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.bathtub_outlined, size: 16),
+                                    SizedBox(width: 4),
+                                    Text('KM Luar'),
+                                  ],
+                                ),
+                                selected: bathroomType == 'luar',
+                                onSelected: (sel) {
+                                  if (sel) {
+                                    setDialogState(() => bathroomType = 'luar');
+                                  }
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Foto Halaman
+                        TextFormField(
+                          controller: yardImageC,
+                          keyboardType: TextInputType.url,
+                          decoration: InputDecoration(
+                            labelText: 'URL Foto Halaman / Luar Kos',
+                            prefixIcon: const Icon(Icons.deck_outlined),
+                            helperText: 'Bisa link gambar online (Unsplash/Imgur)',
+                            suffixIcon: IconButton(
+                              icon: const Icon(Icons.auto_awesome, size: 18),
+                              tooltip: 'Gunakan Contoh Foto Halaman',
+                              onPressed: () {
+                                yardImageC.text =
+                                    'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=600&auto=format&fit=crop&q=60';
+                              },
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Foto Dalam Kamar
+                        TextFormField(
+                          controller: roomImageC,
+                          keyboardType: TextInputType.url,
+                          decoration: InputDecoration(
+                            labelText: 'URL Foto Dalam Kamar',
+                            prefixIcon: const Icon(Icons.bedroom_parent_outlined),
+                            helperText: 'Bisa link gambar online (Unsplash/Imgur)',
+                            suffixIcon: IconButton(
+                              icon: const Icon(Icons.auto_awesome, size: 18),
+                              tooltip: 'Gunakan Contoh Foto Kamar',
+                              onPressed: () {
+                                roomImageC.text =
+                                    'https://images.unsplash.com/photo-1598928506311-c55ded91a20c?w=600&auto=format&fit=crop&q=60';
+                              },
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Deskripsi Fasilitas
+                        TextFormField(
+                          controller: facilitiesC,
+                          maxLines: 3,
+                          decoration: const InputDecoration(
+                            labelText: 'Deskripsi Fasilitas Kos',
+                            prefixIcon: Icon(Icons.stars_outlined),
+                            alignLabelWithHint: true,
+                            hintText:
+                                'Contoh: WiFi cepat, AC, Kasur springbed, Lemari 2 pintu, Meja belajar, Parkir motor, Dapur bersama',
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -219,6 +356,9 @@ create policy "kos_delete_own"
                           final name = nameC.text.trim();
                           final address = addressC.text.trim();
                           final price = int.parse(priceC.text.trim());
+                          final yardUrl = yardImageC.text.trim();
+                          final roomUrl = roomImageC.text.trim();
+                          final facilities = facilitiesC.text.trim();
 
                           try {
                             if (kos == null) {
@@ -226,6 +366,10 @@ create policy "kos_delete_own"
                                 name: name,
                                 address: address,
                                 price: price,
+                                yardImageUrl: yardUrl,
+                                roomImageUrl: roomUrl,
+                                bathroomType: bathroomType,
+                                facilities: facilities,
                               );
                               if (!ctx.mounted) return;
                               Navigator.of(ctx).pop();
@@ -239,6 +383,10 @@ create policy "kos_delete_own"
                                 'name': name,
                                 'address': address,
                                 'price': price,
+                                'yard_image_url': yardUrl,
+                                'room_image_url': roomUrl,
+                                'bathroom_type': bathroomType,
+                                'facilities': facilities,
                               });
                               if (!ctx.mounted) return;
                               Navigator.of(ctx).pop();
@@ -270,7 +418,7 @@ create policy "kos_delete_own"
                           width: 18,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : Text(kos == null ? 'Simpan' : 'Perbarui'),
+                      : Text(kos == null ? 'Simpan Kos' : 'Perbarui Kos'),
                 ),
               ],
             );
@@ -585,68 +733,23 @@ create policy "kos_delete_own"
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       itemCount: items.length,
-                      separatorBuilder: (_, index) => const SizedBox(height: 8),
+                      separatorBuilder: (_, index) => const SizedBox(height: 12),
                       itemBuilder: (context, i) {
                         final kos = items[i];
                         final isMine = (kos.ownerId == myUid) || role == 'admin';
+                        final hasPhoto = kos.yardImageUrl.isNotEmpty ||
+                            kos.roomImageUrl.isNotEmpty;
+                        final displayPhoto = kos.yardImageUrl.isNotEmpty
+                            ? kos.yardImageUrl
+                            : kos.roomImageUrl;
 
                         return Card(
-                          elevation: 1,
+                          elevation: 1.5,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(16),
                           ),
-                          child: ListTile(
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            leading: CircleAvatar(
-                              backgroundColor: Theme.of(context)
-                                  .colorScheme
-                                  .primaryContainer,
-                              child: const Icon(Icons.apartment),
-                            ),
-                            title: Text(
-                              kos.name,
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const SizedBox(height: 2),
-                                Text(kos.address),
-                                const SizedBox(height: 4),
-                                Text(
-                                  _formatRupiah(kos.price),
-                                  style: TextStyle(
-                                    color:
-                                        Theme.of(context).colorScheme.primary,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            trailing: isMine
-                                ? Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      IconButton(
-                                        icon: const Icon(Icons.edit,
-                                            color: Colors.indigo),
-                                        tooltip: 'Edit Kos',
-                                        onPressed: () =>
-                                            _showAddEditKosDialog(kos: kos),
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(Icons.delete,
-                                            color: Colors.redAccent),
-                                        tooltip: 'Hapus Kos',
-                                        onPressed: () => _deleteKos(kos),
-                                      ),
-                                    ],
-                                  )
-                                : const Icon(Icons.chevron_right),
+                          clipBehavior: Clip.antiAlias,
+                          child: InkWell(
                             onTap: () {
                               Navigator.of(context).push(
                                 MaterialPageRoute(
@@ -657,6 +760,146 @@ create policy "kos_delete_own"
                                 ),
                               );
                             },
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Thumbnail Foto
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Container(
+                                      width: 90,
+                                      height: 90,
+                                      color: Colors.indigo.shade50,
+                                      child: hasPhoto
+                                          ? Image.network(
+                                              displayPhoto,
+                                              fit: BoxFit.cover,
+                                              errorBuilder:
+                                                  (context, error, stackTrace) =>
+                                                      Icon(
+                                                Icons.apartment,
+                                                color: Colors.indigo.shade300,
+                                                size: 36,
+                                              ),
+                                            )
+                                          : Icon(
+                                              Icons.apartment,
+                                              color: Colors.indigo.shade300,
+                                              size: 36,
+                                            ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+
+                                  // Konten Kos
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          kos.name,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          kos.address,
+                                          style: TextStyle(
+                                            color: Colors.grey.shade600,
+                                            fontSize: 12,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          '${_formatRupiah(kos.price)} / bln',
+                                          style: TextStyle(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .primary,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 6),
+
+                                        // Badge Kamar Mandi
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 3,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: kos.isBathroomInside
+                                                ? Colors.teal.shade50
+                                                : Colors.orange.shade50,
+                                            borderRadius:
+                                                BorderRadius.circular(6),
+                                            border: Border.all(
+                                              color: kos.isBathroomInside
+                                                  ? Colors.teal.shade200
+                                                  : Colors.orange.shade200,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            kos.bathroomLabel,
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.bold,
+                                              color: kos.isBathroomInside
+                                                  ? Colors.teal.shade800
+                                                  : Colors.orange.shade800,
+                                            ),
+                                          ),
+                                        ),
+
+                                        if (kos.facilities.isNotEmpty) ...[
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            kos.facilities,
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              color: Colors.grey.shade600,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+
+                                  // Action edit/delete
+                                  if (isMine)
+                                    Column(
+                                      children: [
+                                        IconButton(
+                                          icon: const Icon(Icons.edit,
+                                              color: Colors.indigo, size: 20),
+                                          tooltip: 'Edit Kos',
+                                          onPressed: () =>
+                                              _showAddEditKosDialog(kos: kos),
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(Icons.delete,
+                                              color: Colors.redAccent,
+                                              size: 20),
+                                          tooltip: 'Hapus Kos',
+                                          onPressed: () => _deleteKos(kos),
+                                        ),
+                                      ],
+                                    ),
+                                ],
+                              ),
+                            ),
                           ),
                         );
                       },

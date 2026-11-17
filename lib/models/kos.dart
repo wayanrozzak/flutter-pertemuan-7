@@ -4,6 +4,10 @@ class KosModel {
   final String name;
   final String address;
   final int price;
+  final String yardImageUrl; // Foto Halaman / Luar Kos
+  final String roomImageUrl; // Foto Dalam Kamar
+  final String bathroomType; // 'dalam' atau 'luar'
+  final String facilities; // Deskripsi Fasilitas
   final DateTime createdAt;
 
   const KosModel({
@@ -12,8 +16,18 @@ class KosModel {
     required this.name,
     required this.address,
     required this.price,
+    this.yardImageUrl = '',
+    this.roomImageUrl = '',
+    this.bathroomType = 'dalam',
+    this.facilities = '',
     required this.createdAt,
   });
+
+  bool get isBathroomInside =>
+      bathroomType.toLowerCase().trim() == 'dalam';
+
+  String get bathroomLabel =>
+      isBathroomInside ? 'Kamar Mandi Dalam' : 'Kamar Mandi Luar';
 
   factory KosModel.fromMap(Map<String, dynamic> map) {
     return KosModel(
@@ -22,6 +36,10 @@ class KosModel {
       name: (map['name'] ?? '') as String,
       address: (map['address'] ?? '') as String,
       price: (map['price'] as num?)?.toInt() ?? 0,
+      yardImageUrl: (map['yard_image_url'] ?? map['image_url'] ?? '') as String,
+      roomImageUrl: (map['room_image_url'] ?? '') as String,
+      bathroomType: (map['bathroom_type'] ?? 'dalam') as String,
+      facilities: (map['facilities'] ?? '') as String,
       createdAt: map['created_at'] != null
           ? DateTime.tryParse(map['created_at'].toString()) ?? DateTime.now()
           : DateTime.now(),
@@ -34,6 +52,10 @@ class KosModel {
       'name': name,
       'address': address,
       'price': price,
+      'yard_image_url': yardImageUrl,
+      'room_image_url': roomImageUrl,
+      'bathroom_type': bathroomType,
+      'facilities': facilities,
     };
   }
 }
