@@ -41,6 +41,76 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  void _showSqlInfoDialog() {
+    const sql = '''
+create table if not exists public.kos (
+    id         uuid primary key default gen_random_uuid(),
+    owner_id   uuid not null default auth.uid()
+               references auth.users(id) on delete cascade,
+    name       text not null,
+    address    text,
+    price      integer,
+    created_at timestamptz not null default now()
+);
+
+alter table public.kos enable row level security;
+
+create policy "kos_select_authenticated"
+  on public.kos for select to authenticated
+  using (true);
+
+create policy "kos_insert_owner"
+  on public.kos for insert to authenticated
+  with check (
+    auth.uid() = owner_id
+    and exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.role in ('owner', 'admin')
+    )
+  );
+
+create policy "kos_update_own"
+  on public.kos for update to authenticated
+  using (auth.uid() = owner_id)
+  with check (auth.uid() = owner_id);
+
+create policy "kos_delete_own"
+  on public.kos for delete to authenticated
+  using (auth.uid() = owner_id);
+''';
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.storage_rounded, color: Colors.indigo),
+            SizedBox(width: 8),
+            Text('SQL Tabel Kos Supabase'),
+          ],
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: SingleChildScrollView(
+            child: SelectableText(
+              sql,
+              style: const TextStyle(
+                fontFamily: 'monospace',
+                fontSize: 12,
+              ),
+            ),
+          ),
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Tutup'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _logout() async {
     if (_isLoggingOut) return;
     setState(() => _isLoggingOut = true);
@@ -355,6 +425,53 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
                 const SizedBox(height: 16),
+
+                // Banner notifikasi jika tabel Supabase belum dibuat
+                if (KosService.isUsingFallback)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.amber.shade300),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.info_outline,
+                            color: Colors.amber, size: 24),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Mode Data Simulasi',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
+                              ),
+                              Text(
+                                'Tabel public.kos belum dibuat di Supabase. Data contoh lokal ditampilkan agar aplikasi tetap berjalan.',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade800,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: _showSqlInfoDialog,
+                          child: const Text(
+                            'Lihat SQL',
+                            style: TextStyle(fontSize: 12),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
 
                 // Navigasi Filter untuk Owner/Admin
                 if (role == 'owner' || role == 'admin')
