@@ -69,14 +69,14 @@ class _LoginPageState extends State<LoginPage> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const Icon(
-                    Icons.school_rounded,
+                    Icons.home_work_rounded,
                     size: 80,
                     color: Colors.indigo,
                   ),
                   const SizedBox(height: 20),
 
                   const Text(
-                    'Course Explorer',
+                    'KosFinder',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 28,
@@ -87,7 +87,7 @@ class _LoginPageState extends State<LoginPage> {
                   const SizedBox(height: 8),
 
                   Text(
-                    'Silakan login untuk melanjutkan',
+                    'Silakan login untuk mencari atau memasarkan kos',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.grey.shade600),
                   ),

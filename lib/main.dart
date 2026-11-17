@@ -1,21 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
 import 'firebase_options.dart';
-
-import 'providers/course_provider.dart';
-import 'repositories/course_repository.dart';
-import 'screens/course_home_page.dart';
-import 'services/course_supabase_service.dart';
+import 'pages/home_page.dart';
+import 'pages/login_page.dart';
 import 'services/auth_service.dart';
 import 'services/notification_service.dart';
-import 'pages/login_page.dart';
-
-const String apiBaseUrl =
-    'https://course-api-pearl.vercel.app';
 
 const String supabaseUrl =
     'https://trhebmvxbwyjacyokpvx.supabase.co';
@@ -38,26 +30,17 @@ Future<void> main() async {
     publishableKey: supabasePublishableKey,
   );
 
-  // 3. Inisialisasi Repository dan Provider
-  final dataSource = CourseSupabaseService();
-  final repository = CourseRepository(dataSource);
-
-  // 4. Menjalankan aplikasi
-  runApp(
-    ChangeNotifierProvider(
-      create: (_) => CourseProvider(repository)..loadCourses(),
-      child: const CourseExplorerApp(),
-    ),
-  );
+  // 3. Menjalankan aplikasi KosFinder
+  runApp(const KosFinderApp());
 }
 
-class CourseExplorerApp extends StatelessWidget {
-  const CourseExplorerApp({super.key});
+class KosFinderApp extends StatelessWidget {
+  const KosFinderApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Course Explorer',
+      title: 'KosFinder',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
@@ -83,7 +66,7 @@ class AuthGate extends StatelessWidget {
             : Supabase.instance.client.auth.currentSession;
 
         if (session != null) {
-          return const CourseHomePage();
+          return const HomePage();
         }
 
         return const LoginPage();
