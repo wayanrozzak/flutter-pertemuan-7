@@ -32,7 +32,12 @@ class DraftRepository {
       throw const FormatException('Ukuran foto maksimal 5 MB.');
     }
 
-    final root = await getApplicationDocumentsDirectory();
+    Directory root;
+    try {
+      root = await getApplicationDocumentsDirectory();
+    } catch (_) {
+      root = Directory.current;
+    }
     final folder = Directory('${root.path}/kosfinder_photos');
     await folder.create(recursive: true);
     final output = File(
